@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>検索指示画面 - 大川式植物検索</title>
+  <link rel="stylesheet" href="http://code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+  <script src="http://code.jquery.com/jquery-2.1.4.js"></script>
+  <script src="http://code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+  <script>
+  $(function() {
+    var dialog = new Array();
+
+	// 検索対象となるセルのリスト
+	var targets = [
+			'aa', 'ab', 'ac',
+			'ca', 'cb', 'cc', 'cd', 'ce', 'cf', 'cg', 'ch', 'ci', 'cj', 'ck',
+			'ea', 'eb', 'ec', 'ed', 'ee', 'ef', 'eg', 'eh', 'ei', 'ej', 'ek',
+			'ga', 'gb', 
+			'ha', 'hb', 'hc', 'hd'
+			];
+	var target;
+	var col;
+
+	// ダイアログでの設定
+    function setTarget() {
+	  var arr = new Array();
+
+	  $('[name="x' + target + '"]:checked').each(function(){
+	    arr.push($(this).val());
+	  });
+	  $("#" + target).text(arr.join(""));
+    }
+
+	// ダイアログ表示時にチェックボックスの内容をセットする
+    function getTarget() {
+	    $('[name="x' + target + '"]:checked').val($("#" + target).text().split(""));
+
+		col = $("#" + target).css("background-color");
+		$("#" + target).css("background-color", "green");
+    }
+
+	// ダイアログ終了時の処理
+    function closeDialog() {
+		$("#" + target).css("background-color", col);
+    }
+
+	// 各々の検索条件用のダイアログを定義。検索条件の実体は、おのおののdevタグで記述している
+	// チェックボックスの名前とセルの名前が重複してしまうため、チェックボックスの名前のプリフィックスに'x'を付けた
+	$.each(targets, function() {
+		target = this;
+		// daialogの諸元と動作を定義
+		dialog[target] = $( "#dialog-" + target + "-form" ).dialog({
+		  autoOpen: false,
+		  resizable: false,
+//		  show: "scale",
+//		  hide: "scale",
+		  height: 360,
+		  width: 250,
+		  modal: true,
+		  buttons: {
+			"設定": function() {
+				setTarget()
+				dialog[target].dialog( "close" );
+			},
+			"取消": function() {
+			  dialog[target].dialog( "close" );
+			}
+		  },
+		  open: getTarget,
+		  close: closeDialog
+		});
+
+		// dialogを起動する条件を定義
+		$( "#" + target ).on( "click", function() {
+		  target = this.id;
+		  dialog[target].dialog( "open" );
+		});
+	});
+
+	$( "#do" ).on( "click", function() {
+		// Tableのセルから検索条件を取り出す
+		// 連想配列を使う
+		var arr = {};
+
+		if( $("#name").val() != "") {
+			arr["name"] = $("#name").val();
+		}
+		if( $("#cond").val() != "") {
+			arr["cond"] = $("#cond").val();
+		}
+		$.each(targets, function() {
+			var w = $('#' + this).text();
+			if(w!='') {
+				// 検索条件があるならその名前をキーにして条件をセットする
+				arr[this] = w;
+			}
+		});
+
+//		alert(arr);
+
+		$.post( "/searchPlant/result_list.html", arr, function(response) {
+			console.log(response);
+			// 既表示の検索結果を空にする。 2=項目ヘッダー行 + 検索条件行
+			$('#searchTable').find("tr:gt(2)").remove();
+			// 検索結果を追加する。
+			$('#searchTable').append(response);
+		});
+	});
+
+	// 検索条件を空にする
+	$( "#reset" ).on( "click", function() {
+		$('#name').val("");
+		$.each(targets, function() {
+			$('#' + this).text("");
+		});
+		
+		//検索結果も空にする。 2=項目ヘッダー行 + 検索条件行
+		$('#searchTable').find("tr:gt(2)").remove();
+	});
+
+});
+  </script>
+
+<style>
+table {
+	border-collapse: collapse;
+}
+th, td {
+	padding: 2px;
+	border-style: solid;
+	border-width: 1px;
+	vertical-align: top;
+}
+th {
+}
+td:first-child {
+	text-align: right;
+}
+select {
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	appearance: none;
+}
+</style>
+</head>
+<body>
+<!--
+条件指定部分は、固定なのでここで直書き。
+DBから取得して生成してもいいが、やるにしても後回しでいいだろう。
+ただ、冗長ではあるのでメンテナンスを頻繁にするならムダに長いのでDB化したほうが見通しが良い。
+-->
+<div id="dialog-aa-form" title="茎 > 形">
+  <form>
+	<label><input type="checkbox" name="xaa" value="A">A.木</label><br/>
+	<label><input type="checkbox" name="xaa" value="B">B.草</label><br/>
+	<label><input type="checkbox" name="xaa" value="C">C.よじ登る</label><br/>
+	<label><input type="checkbox" name="xaa" value="D">D.巻き付く</label><br/>
+	<label><input type="checkbox" name="xaa" value="E">E.はう</label><br/>
+	<label><input type="checkbox" name="xaa" value="F">F.水生</label><br/>
+	<label><input type="checkbox" name="xaa" value="G">G.寄生</label><br/>
+  </form>
+</div>
+<div id="dialog-ab-form" title="茎 > 表面">
+  <form>
+	<label><input type="checkbox" name="xab" value="A">A.毛</label><br/>
+	<label><input type="checkbox" name="xab" value="B">B.とげ</label><br/>
+	<label><input type="checkbox" name="xab" value="C">C.はね</label><br/>
+	<label><input type="checkbox" name="xab" value="D">D.すじ</label><br/>
+  </form>
+</div>
+<div id="dialog-ac-form" title="茎 > 切口">
+  <form>
+	<label><input type="checkbox" name="xac" value="A">A.円形・多角形</label><br/>
+	<label><input type="checkbox" name="xac" value="B">B.四角形</label><br/>
+	<label><input type="checkbox" name="xac" value="C">C.三角形</label><br/>
+	<label><input type="checkbox" name="xac" value="D">D.中空</label><br/>
+	<label><input type="checkbox" name="xac" value="E">E.汁</label><br/>
+  </form>
+</div>
+<div id="dialog-ca-form" title="葉 > 形">
+  <form>
+	<label><input type="checkbox" name="xca" value="A">A.単葉・細長い</label><br/>
+	<label><input type="checkbox" name="xca" value="B">B.単葉・細長くない</label><br/>
+	<label><input type="checkbox" name="xca" value="C">C.単葉・小葉</label><br/>
+	<label><input type="checkbox" name="xca" value="D">D.単葉・てのひら状</label><br/>
+	<label><input type="checkbox" name="xca" value="E">E.単葉・羽状</label><br/>
+	<label><input type="checkbox" name="xca" value="F">F.単葉・こみいった</label><br/>
+	<label><input type="checkbox" name="xca" value="G">G.切れこみ</label><br/>
+	<label><input type="checkbox" name="xca" value="H">H.左右不同</label><br/>
+	<label><input type="checkbox" name="xca" value="I">I.鱗片葉だけ・葉がない</label><br/>
+  </form>
+</div>
+<div id="dialog-cb-form" title="葉 > 先">
+  <form>
+	<label><input type="checkbox" name="xcb" value="A">A.凸形</label><br/>
+	<label><input type="checkbox" name="xcb" value="B">B.円形・切形</label><br/>
+	<label><input type="checkbox" name="xcb" value="C">C.凹形</label><br/>
+  </form>
+</div>
+<div id="dialog-cc-form" title="葉 > もと">
+	<label><input type="checkbox" name="xcc" value="A">A.さかさ凸形</label><br/>
+	<label><input type="checkbox" name="xcc" value="B">B.円形・切形</label><br/>
+	<label><input type="checkbox" name="xcc" value="C">C.さかさ凹型</label><br/>
+</div>
+<div id="dialog-cd-form" title="葉 > ふち">
+	<label><input type="checkbox" name="xcd" value="A">A.ぎざぎざ</label><br/>
+	<label><input type="checkbox" name="xcd" value="B">B.波状</label><br/>
+	<label><input type="checkbox" name="xcd" value="C">C.なめらか</label><br/>
+	<label><input type="checkbox" name="xcd" value="D">D.フリル状</label><br/>
+	<label><input type="checkbox" name="xcd" value="E">E.毛・とげ</label><br/>
+	<label><input type="checkbox" name="xcd" value="F">F.切れこみ</label><br/>
+</div>
+<div id="dialog-ce-form" title="葉 > 脈">
+	<label><input type="checkbox" name="xce" value="A">A.網状・魚の骨</label><br/>
+	<label><input type="checkbox" name="xce" value="B">B.てのひら状</label><br/>
+	<label><input type="checkbox" name="xce" value="C">C.平行</label><br/>
+	<label><input type="checkbox" name="xce" value="D">D.中央に１本</label><br/>
+	<label><input type="checkbox" name="xce" value="E">E.脈が見えない</label><br/>
+</div>
+<div id="dialog-cf-form" title="葉 > 柄">
+	<label><input type="checkbox" name="xcf" value="A">A.普通の柄</label><br/>
+	<label><input type="checkbox" name="xcf" value="B">B.茎をだく柄</label><br/>
+	<label><input type="checkbox" name="xcf" value="C">C.とげ・はねのある柄</label><br/>
+	<label><input type="checkbox" name="xcf" value="D">D.つる状の柄</label><br/>
+	<label><input type="checkbox" name="xcf" value="E">E.柄がない</label><br/>
+	<label><input type="checkbox" name="xcf" value="F">F.さや</label><br/>
+	<label><input type="checkbox" name="xcf" value="G">G.茎をだく</label><br/>
+</div>
+<div id="dialog-cg-form" title="葉 > 托葉">
+	<label><input type="checkbox" name="xcg" value="A">A.葉状・他</label><br/>
+	<label><input type="checkbox" name="xcg" value="B">B.さや状</label><br/>
+	<label><input type="checkbox" name="xcg" value="C">C.線状</label><br/>
+	<label><input type="checkbox" name="xcg" value="D">D.とげ状</label><br/>
+</div>
+<div id="dialog-ch-form" title="葉 > つき方">
+	<label><input type="checkbox" name="xch" value="A">A.互生</label><br/>
+	<label><input type="checkbox" name="xch" value="B">B.対生</label><br/>
+	<label><input type="checkbox" name="xch" value="C">C.輪生</label><br/>
+	<label><input type="checkbox" name="xch" value="D">D.束生</label><br/>
+	<label><input type="checkbox" name="xch" value="E">E.根生</label><br/>
+	<label><input type="checkbox" name="xch" value="F">F.単生</label><br/>
+</div>
+<div id="dialog-ci-form" title="葉 > におい">
+	<label><input type="checkbox" name="xci" value="A">A.ヨモギ・ドクダミなど特別なにおい</label><br/>
+</div>
+<div id="dialog-cj-form" title="葉 > 冬の木の葉">
+	<label><input type="checkbox" name="xcj" value="A">A.常緑樹</label><br/>
+	<label><input type="checkbox" name="xcj" value="B">B.落葉樹</label><br/>
+</div>
+<div id="dialog-ck-form" title="葉 > 草の寿命">
+	<label><input type="checkbox" name="xck" value="A">A.１年草</label><br/>
+	<label><input type="checkbox" name="xck" value="B">B.２年草</label><br/>
+	<label><input type="checkbox" name="xck" value="C">C.多年草</label><br/>
+</div>
+<div id="dialog-ea-form" title="花 > 色">
+	<label><input type="checkbox" name="xea" value="A">A.赤系</label><br/>
+	<label><input type="checkbox" name="xea" value="B">B.黄系</label><br/>
+	<label><input type="checkbox" name="xea" value="C">C.青系</label><br/>
+	<label><input type="checkbox" name="xea" value="D">D.白</label><br/>
+</div>
+<div id="dialog-eb-form" title="花 > つき方">
+	<label><input type="checkbox" name="xeb" value="A">A.単生 チューリップ状</label><br/>
+	<label><input type="checkbox" name="xeb" value="B">B.頭状 キク状</label><br/>
+	<label><input type="checkbox" name="xeb" value="C">C.穂状 オオバコ状</label><br/>
+	<label><input type="checkbox" name="xeb" value="D">D.ふさ状 ナズナ状</label><br/>
+	<label><input type="checkbox" name="xeb" value="E">E.球状</label><br/>
+	<label><input type="checkbox" name="xeb" value="F">F.平面状</label><br/>
+	<label><input type="checkbox" name="xeb" value="G">G.肉穂状</label><br/>
+	<label><input type="checkbox" name="xeb" value="H">H.円すい状</label><br/>
+	<label><input type="checkbox" name="xeb" value="I">I.対生・輪生</label><br/>
+	<label><input type="checkbox" name="xeb" value="J">J.他のつき方</label><br/>
+</div>
+<div id="dialog-ec-form" title="花 > 形">
+	<label><input type="checkbox" name="xec" value="A">A.放射相称</label><br/>
+	<label><input type="checkbox" name="xec" value="B">B.左右相称</label><br/>
+	<label><input type="checkbox" name="xec" value="C">C.花びらがはなれる</label><br/>
+	<label><input type="checkbox" name="xec" value="D">D.花びらが一部くっつく</label><br/>
+	<label><input type="checkbox" name="xec" value="E">E.とび出し</label><br/>
+</div>
+<div id="dialog-ed-form" title="花 > 花びらの数">
+	<label><input type="checkbox" name="xed" value="A">A.０，１</label><br/>
+	<label><input type="checkbox" name="xed" value="B">B.２</label><br/>
+	<label><input type="checkbox" name="xed" value="C">C.３</label><br/>
+	<label><input type="checkbox" name="xed" value="D">D.４</label><br/>
+	<label><input type="checkbox" name="xed" value="E">E.５</label><br/>
+	<label><input type="checkbox" name="xed" value="F">F.６</label><br/>
+	<label><input type="checkbox" name="xed" value="G">G.７</label><br/>
+</div>
+<div id="dialog-ee-form" title="花 > がくの形">
+	<label><input type="checkbox" name="xee" value="A">A.副がく</label><br/>
+	<label><input type="checkbox" name="xee" value="B">B.花びら状</label><br/>
+	<label><input type="checkbox" name="xee" value="C">C.毛・とげ状</label><br/>
+</div>
+<div id="dialog-ef-form" title="花 > がくの数">
+	<label><input type="checkbox" name="xef" value="A">A.０，１</label><br/>
+	<label><input type="checkbox" name="xef" value="B">B.２</label><br/>
+	<label><input type="checkbox" name="xef" value="C">C.３</label><br/>
+	<label><input type="checkbox" name="xef" value="D">D.４</label><br/>
+	<label><input type="checkbox" name="xef" value="E">E.５</label><br/>
+	<label><input type="checkbox" name="xef" value="F">F.６</label><br/>
+	<label><input type="checkbox" name="xef" value="G">G.７</label><br/>
+</div>
+<div id="dialog-eg-form" title="花 > ほうがくの外側">
+	<label><input type="checkbox" name="xeg" value="A">A.葉状・他</label><br/>
+	<label><input type="checkbox" name="xeg" value="B">B.総ほう</label><br/>
+	<label><input type="checkbox" name="xeg" value="C">C.花びら状</label><br/>
+</div>
+<div id="dialog-eh-form" title="花 > おしべの形">
+	<label><input type="checkbox" name="xeh" value="A">A.?</label><br/>
+	<label><input type="checkbox" name="xeh" value="B">B.２本長い</label><br/>
+	<label><input type="checkbox" name="xeh" value="C">C.４本長い</label><br/>
+	<label><input type="checkbox" name="xeh" value="D">D.もとが１つ</label><br/>
+	<label><input type="checkbox" name="xeh" value="E">E.もとが２つ</label><br/>
+	<label><input type="checkbox" name="xeh" value="F">F.もとが３以上</label><br/>
+	<label><input type="checkbox" name="xeh" value="G">G.花粉ぶくろがくっつく</label><br/>
+	<label><input type="checkbox" name="xeh" value="H">H.花粉ぶくろだけ</label><br/>
+	<label><input type="checkbox" name="xeh" value="I">I.めしべと合体</label><br/>
+</div>
+<div id="dialog-ei-form" title="花 > おしべの数">
+	<label><input type="checkbox" name="xei" value="A">A.１</label><br/>
+	<label><input type="checkbox" name="xei" value="B">B.２</label><br/>
+	<label><input type="checkbox" name="xei" value="C">C.３</label><br/>
+	<label><input type="checkbox" name="xei" value="D">D.４</label><br/>
+	<label><input type="checkbox" name="xei" value="E">E.５</label><br/>
+	<label><input type="checkbox" name="xei" value="F">F.６</label><br/>
+	<label><input type="checkbox" name="xei" value="G">G.７以上</label><br/>
+</div>
+<div id="dialog-ej-form" title="花 > めしべの先">
+	<label><input type="checkbox" name="xej" value="A">A.先１</label><br/>
+	<label><input type="checkbox" name="xej" value="B">B.先２ めしべ２</label><br/>
+	<label><input type="checkbox" name="xej" value="C">C.先３ めしべ３</label><br/>
+	<label><input type="checkbox" name="xej" value="D">D.先４ めしべ４</label><br/>
+	<label><input type="checkbox" name="xej" value="E">E.先５ めしべ５</label><br/>
+	<label><input type="checkbox" name="xej" value="F">F.先６ めしべ６</label><br/>
+	<label><input type="checkbox" name="xej" value="G">G.先７以上 めしべ７以上</label><br/>
+</div>
+<div id="dialog-ek-form" title="花 > 子房の位置">
+	<label><input type="checkbox" name="xek" value="A">A.上位</label><br/>
+	<label><input type="checkbox" name="xek" value="B">B.中位</label><br/>
+	<label><input type="checkbox" name="xek" value="C">C.下位</label><br/>
+</div>
+<div id="dialog-ga-form" title="果実 > 熟した色">
+	<label><input type="checkbox" name="xga" value="A">A.赤系</label><br/>
+	<label><input type="checkbox" name="xga" value="B">B.黄系</label><br/>
+	<label><input type="checkbox" name="xga" value="C">C.青系</label><br/>
+	<label><input type="checkbox" name="xga" value="D">D.白</label><br/>
+	<label><input type="checkbox" name="xga" value="E">E.黒</label><br/>
+</div>
+<div id="dialog-gb-form" title="果実 > 実の形">
+	<label><input type="checkbox" name="xgb" value="A">A.まつさか状</label><br/>
+	<label><input type="checkbox" name="xgb" value="B">B.果物・野菜状状</label><br/>
+	<label><input type="checkbox" name="xgb" value="C">C.とげ</label><br/>
+	<label><input type="checkbox" name="xgb" value="D">D.はね</label><br/>
+	<label><input type="checkbox" name="xgb" value="E">E.長い毛</label><br/>
+	<label><input type="checkbox" name="xgb" value="F">F.裂ける</label><br/>
+	<label><input type="checkbox" name="xgb" value="G">G.他の形</label><br/>
+</div>
+<div id="dialog-ha-form" title="花期・分布 > 花期">
+	<label><input type="checkbox" name="xha" value="A">A.春 (3-5月)</label><br/>
+	<label><input type="checkbox" name="xha" value="B">B.夏 (6-8月)</label><br/>
+	<label><input type="checkbox" name="xha" value="C">C.秋 (9-11月)</label><br/>
+	<label><input type="checkbox" name="xha" value="D">D.冬 (12-2月)</label><br/>
+</div>
+<div id="dialog-hb-form" title="花期・分布 > 分布">
+	<label><input type="checkbox" name="xhb" value="A">A.北海道</label><br/>
+	<label><input type="checkbox" name="xhb" value="B">B.東北</label><br/>
+	<label><input type="checkbox" name="xhb" value="C">C.関東</label><br/>
+	<label><input type="checkbox" name="xhb" value="D">D.中部</label><br/>
+	<label><input type="checkbox" name="xhb" value="E">E.近畿</label><br/>
+	<label><input type="checkbox" name="xhb" value="F">F.中国</label><br/>
+	<label><input type="checkbox" name="xhb" value="G">G.四国</label><br/>
+	<label><input type="checkbox" name="xhb" value="H">H.九州</label><br/>
+	<label><input type="checkbox" name="xhb" value="I">I.個人定義</label><br/>
+</div>
+<div id="dialog-hc-form" title="花期・分布 > 環境">
+	<label><input type="checkbox" name="xhc" value="A">A.<span title="中部では1500m以下">平地・山地</label><br/>
+	<label><input type="checkbox" name="xhc" value="B">B.<span title="中部では1500m以上">高山</label><br/>
+	<label><input type="checkbox" name="xhc" value="C">C.<span title="砂浜・岩場・海中">海辺</label><br/>
+	<label><input type="checkbox" name="xhc" value="D">D.<span title="川・池・沼・田">水中</label><br/>
+	<label><input type="checkbox" name="xhc" value="E">E.<span title="原・林・岩場">湿地</label><br/>
+</div>
+<div id="dialog-hd-form" title="花期・分布 > 自生栽培">
+	<label><input type="checkbox" name="xhd" value="A">A.自生</label><br/>
+	<label><input type="checkbox" name="xhd" value="B">B.栽培</label><br/>
+	<label><input type="checkbox" name="xhd" value="C">C.帰化</label><br/>
+</div>
+<dl>
+<dt>
+<h2>検索条件指示</h2>
+</dt>
+<dd>特徴の下の箱をクリックして詳細な特徴を選んで下さい</dd>
+<dd>
+<input type="button" id="do" value="検索"/>
+<input type="button" id="reset" value="取消" />
+</dd>
+</dt>
+<form id="searchForm">
+<table id="searchTable">
+<tr><th colspan="2" rowspan="2">和名</th><th colspan="3">茎</th><th colspan="11">葉</th><th colspan="11">花</th><th colspan="2">果実</th><th colspan="4">花期<br/>分布</th></tr>
+<tr>
+<th>形</th><th>表<br/>面</th><th>切<br/>口</th>
+<th>形</th><th>先</th><th>も<br/>と</th><th>ふ<br/>ち</th><th>脈</th><th>柄</th><th>托<br/>葉</th><th>つ<br/>き<br/>方</th><th>に<br/>お<br/>い</th><th>冬<br/>の<br/>木<br/>の<br/>葉</th><th>草<br/>の<br/>寿<br/>命</th>
+<th>色</th><th>つ<br/>き<br/>方</th><th>形</th><th>花<br/>び<br/>ら<br/>の<br/>数</th><th>が<br/>く<br/>の<br/>形</th><th>が<br/>く<br/>の<br/>数</th><th><span title="ほうがく">苞<br/>萼</span><br/>の<br/>外<br/>側</th><th>お<br/>し<br/>べ<br/>の<br/>形</th><th>お<br/>し<br/>べ<br/>の<br/>数</th><th>め<br/>し<br/>べ<br/>の<br/>先</th><th>子<br/>房<br/>の<br/>位<br/>置</th>
+<th>熟<br/>し<br/>た<br/>色</th><th>実<br/>の<br/>形</th>
+<th>花<br/>期</th><th>分<br/>布</th><th>環<br/>境</th><th>自<br/>生<br/>栽<br/>培</th>
+</tr>
+<tr>
+<td colspan="2" style="text-align:left"><input type="text" id="name" value="" />
+<select id="cond">
+<option value="A">前方一致</option>
+<option value="B">部分一致</option>
+<option value="C">完全一致</option>
+</select>
+</td>
+<td id="aa"></td><td id="ab"></td><td id="ac"></td>
+<td id="ca"></td><td id="cb"></td><td id="cc"></td><td id="cd"></td><td id="ce"></td><td id="cf"></td><td id="cg"></td><td id="ch"></td><td id="ci"></td><td id="cj"></td><td id="ck"></td>
+<td id="ea"></td><td id="eb"></td><td id="ec"></td><td id="ed"></td><td id="ee"></td><td id="ef"></td><td id="eg"></td><td id="eh"></td><td id="ei"></td><td id="ej"></td><td id="ek"></td>
+<td id="ga"></td><td id="gb"></td>
+<td id="ha"></td><td id="hb"></td><td id="hc"></td><td id="hd"></td>
+</tr>
+</table>
+</form>
+</body>
+</html>
