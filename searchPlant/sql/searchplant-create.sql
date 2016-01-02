@@ -259,6 +259,9 @@ group by searchKey_1
 order by searchkey_1;
 */
 
+-- CSV取り込みに使ったテーブルは、不要なので削除
+drop table if exists wk_searchPlant;
+
 -- 検索条件をすべて用意したテーブルを作る
 -- CSVでは、該当した条件のみの列挙されているが、ここでは、すべての条件項目を用意して、該当条件に値が入った項目を用意する
 drop table if exists plant_trait;
@@ -660,8 +663,9 @@ select a.lno
 ,ifnull((select 'C' from searchplant_2 b where b.lno = a.lno and searchkey = '8303'), '')
 from searchplant_1 a;
 
-
-
+--
+作成終了したので、最後に空き領域を開放する
+vacuum;
 
 
 
