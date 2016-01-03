@@ -13,7 +13,9 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"os"
+	"path"
 
+	"strconv"
 	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -25,12 +27,13 @@ const htmlPath = "../html/"
 
 var (
 	db *sql.DB
-	tx *sql.Tx
 )
 
 var (
 	addr = flag.Bool("addr", false, "find open address and print to final-port.txt")
 )
+
+//TODO イメージはURLで返す必要があるので、 Page とは、別にした方がいい・・・と思う
 
 // Item 検索条件の情報
 type Item struct {
@@ -74,6 +77,51 @@ func search(w http.ResponseWriter, r *http.Request) {
 	httputil.DumpRequest(r, false)
 
 	renderTemplate(w, "searchPlant", page)
+}
+
+// Images 以下のURLをLnoとして該当のイメージを返す
+//TODO ここでSQLを発行してイメージを取得するほうが軽くなる？
+func getImage(w http.ResponseWriter, r *http.Request) {
+	var image []byte
+
+	//	log.Printf(">>>>> getImage in\n")
+	//	defer log.Println("<<<<< getImage out")
+
+	r.ParseForm()
+
+	//	log.Printf("%s : %s%s : Header(%s) Form(%s), len(%d)\n",
+	//		r.Method,
+	//		r.RemoteAddr,
+	//		r.URL.Path,
+	//		r.Header.Get("Content-Type"),
+	//		r.Form,
+	//		len(r.Form),
+	//	)
+
+	httputil.DumpRequest(r, false)
+
+	// URL から Lno を取得して、DBからイメージを取得、Response に返す
+	lno, err := strconv.Atoi(path.Base(r.URL.Path))
+	if err != nil {
+		log.Fatalf("%q: '%s'\n", err, r.URL.Path)
+	}
+	tx := begin()
+
+	sql := "select image from plant_image where lno = ? and sno = ?;"
+	row, err := tx.Query(sql, lno, 1)
+	if err != nil {
+		panic(err)
+	}
+	b := row.Next()
+	image = nil
+	if b != false {
+		row.Scan(&image)
+	} else {
+		log.Printf("Lno(%d) is not found\n", lno)
+	}
+	rollback(tx)
+
+	w.Write(image)
 }
 
 func result_list(w http.ResponseWriter, r *http.Request) {
@@ -213,7 +261,7 @@ where
 	str = str + sqlWhere
 	log.Printf("sql[%s]\n", str)
 
-	begin() // トランザクションの開始
+	tx := begin() // トランザクションの開始
 
 	rows, err = db.Query(str)
 	if err != nil {
@@ -262,7 +310,7 @@ where
 	}
 	rows.Close()
 
-	commit() // トランザクションの正常終了
+	commit(tx) // トランザクションの正常終了
 
 	//	httputil.DumpRequest(r, false)
 
@@ -286,21 +334,31 @@ func renderTemplate(w http.ResponseWriter, tmpl string, p *Page) {
 	}
 }
 
-func begin() {
-	var err error
+func begin() *sql.Tx {
 
 	// トランザクションの開始
-	tx, err = db.Begin()
+	tx, err := db.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return tx
+}
+
+func commit(tx *sql.Tx) {
+	var err error
+
+	// トランザクションの正常終了
+	err = tx.Commit()
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
-func commit() {
+func rollback(tx *sql.Tx) {
 	var err error
 
-	// トランザクションの正常終了
-	err = tx.Commit()
+	// トランザクションの取消終了
+	err = tx.Rollback()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -328,6 +386,9 @@ func main() {
 
 	http.HandleFunc("/searchPlant/", search)
 	http.HandleFunc("/searchPlant/result_list.html", result_list)
+	//TODO イメージファイル用のURL lno をキーにしてイメージを返す。
+	http.HandleFunc("/searchPlant/images/", getImage)
+
 	//TODO 色などを変更するためにもローカルに持ちたい。以前、用いたものは、エラーとなるので要再挑戦！
 	//	http.HandleFunc("/jquery-ui-1.11.4.custom-1/", func(w http.ResponseWriter, r *http.Request) {
 	//	http.ServeFile(w, r, r.URL.Path[1:])
